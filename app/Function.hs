@@ -14,7 +14,7 @@ radiance scene ray randGen depth
         (Nothing, _)    -> ((Vec.Vec 0 0 0), randGen)
         (_, Just (Shape.Sphere _ _ _ _ Shape.Diff)) -> ((Vec.addVec selfEmission (Vec.multVec selfColor nextDiff)), randGen3)
         (_, Just (Shape.Sphere _ _ _ _ Shape.Spec)) -> ((Vec.addVec selfEmission (Vec.multVec selfColor nextSpec)), randGen4)
-        (_, Just (Shape.Sphere _ _ _ _ Shape.Refr)) -> error "todo"
+        (_, Just (Shape.Sphere _ _ _ _ Shape.Refr)) -> ((Vec.addVec selfEmission (Vec.multVec selfColor nextRefr)), randGen5)
     where 
         (t, element) = intersection scene ray 
         selfEmission = if element /= Nothing then Shape.emission (fromJust element) else (Vec.Vec 0 0 0)
@@ -26,6 +26,21 @@ radiance scene ray randGen depth
         (nextDiff, randGen3) = radiance scene rayDiff randGen2 (depth+1)
         raySpec = specRay element t ray  
         (nextSpec, randGen4) = radiance scene raySpec randGen1 (depth+1)
+        (reRay, trRay, re, tr) = refrRay element t ray 
+        (nextRefr, randGen5) = case trRay of 
+            Nothing -> radiance scene reRay randGen1 (depth+1)
+            _ -> if depth > 2 
+                then (if randNum2 < pRerf then ((Vec.scaleVec retFl rp), randGen7) else ((Vec.scaleVec retFr tp), randGen8))
+                else ((Vec.addVec (Vec.scaleVec retFl (fromJust re)) (Vec.scaleVec retFr2 (fromJust tr))), randGen9)
+                where
+                    pRerf = 0.25 + 0.5 * (fromJust re)
+                    rp = (fromJust re) / pRerf
+                    tp = (fromJust tr) / (1-pRerf)
+                    (randNum2, randGen6) = random randGen1
+                    (retFl, randGen7) = radiance scene reRay randGen6 (depth+1)
+                    (retFr, randGen8) = radiance scene (fromJust trRay) randGen6 (depth+1)
+                    (retFr2, randGen9) = radiance scene (fromJust trRay) randGen7 (depth+1)
+
 
 diffRay :: (RandomGen g) => Maybe Shape.Element -> Maybe Double -> Shape.Ray -> g -> (Shape.Ray, g)
 diffRay (Just element) (Just t) (Shape.Ray rO rD) randGen = ( Shape.Ray x (Vec.normVec (Vec.addVec (Vec.addVec u' v') w')), randGen2 )
@@ -57,10 +72,10 @@ refrRay (Just element) (Just t) (Shape.Ray rO rD)
     where
         refl = Shape.Ray x (Vec.subVec rD (Vec.scaleVec n (2 * (Vec.dotVec n rD))))
         refr = Shape.Ray x tdir
-        re = r0 + (1 - r0)*(c**4)
+        re = r0 + (1 - r0)*(c**5)
         tr = 1-re
         into = Vec.dotVec n nl > 0
-        nl = if (Vec.dotVec n rD) > 0 then n else Vec.scaleVec n (-1)
+        nl = if (Vec.dotVec n rD) < 0 then n else Vec.scaleVec n (-1)
         n = Vec.normVec (Vec.subVec x (Shape.position element))
         x = Vec.addVec rO (Vec.scaleVec rD t)
         nc = 1
@@ -69,9 +84,9 @@ refrRay (Just element) (Just t) (Shape.Ray rO rD)
         ddn = Vec.dotVec rD nl
         cos2t = 1-nnt*nnt*(1-ddn*ddn)
         tdir = if into 
-            then Vec.normVec (Vec.subVec (Vec.scaleVec rD nnt) (Vec.scaleVec n (ddn*nnt*(sqrt cos2t))))
-            else Vec.normVec (Vec.subVec (Vec.scaleVec rD nnt) (Vec.scaleVec n ((-1)*ddn*nnt*(sqrt cos2t))))
-        r0 = (nt-nc)/(nt+nc)
+            then Vec.normVec (Vec.subVec (Vec.scaleVec rD nnt) (Vec.scaleVec n (ddn*nnt+(sqrt cos2t))))
+            else Vec.normVec (Vec.subVec (Vec.scaleVec rD nnt) (Vec.scaleVec n ((-1)*(ddn*nnt+(sqrt cos2t)))))
+        r0 = ((nt-nc)**2)/((nt+nc)**2)
         c = 1 - (if into then (-1)*ddn else (Vec.dotVec tdir n))
         
 

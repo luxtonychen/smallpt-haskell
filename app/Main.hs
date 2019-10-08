@@ -33,10 +33,10 @@ sampleRow seed row = sampleRow' (mkStdGen seed) 1024
             | step /= 0 = res:(sampleRow' newGen (step-1))
             | otherwise = []
             where
-                (t_res, newGen) = sampleAt rGen cam scene (fromIntegral step) (fromIntegral row) 2 2
+                (t_res, newGen) = sampleAt rGen cam scene (fromIntegral step) (fromIntegral row) 1
                 res = clamp t_res
-                
-sampleScene = [sampleRow i (showValue "row" i) | i <- [0..767]]
+
+sampleScene = [sampleRow i (showValue "row" i) | i <- [767, 766..0]]
 
 cam = Shape.Ray (Vec.Vec 50 52 295.6) (Vec.normVec (Vec.Vec 0 (-0.042612) (-1)))
 scene = [ 
@@ -47,25 +47,48 @@ scene = [
     (Shape.Sphere 1e5 (Vec.Vec 50 1e5 81.6)             (Vec.Vec 0 0 0)     (Vec.Vec 0.75 0.75 0.75)    Shape.Diff),
     (Shape.Sphere 1e5 (Vec.Vec 50 ((-1e5)+81.6) 81.6)   (Vec.Vec 0 0 0)     (Vec.Vec 0.75 0.75 0.75)    Shape.Diff),
     (Shape.Sphere 16.5 (Vec.Vec 27 16.5 47)             (Vec.Vec 0 0 0)     (Vec.Vec 0.999 0.999 0.999)    Shape.Spec),
+    (Shape.Sphere 16.5 (Vec.Vec 73 16.5 78)             (Vec.Vec 0 0 0)     (Vec.Vec 0.999 0.999 0.999)    Shape.Refr),
     (Shape.Sphere 600 (Vec.Vec 50 (681.6-0.27) 81.6)    (Vec.Vec 12 12 12)  (Vec.Vec 0 0 0)             Shape.Diff)]
 
-sampleAt :: (RandomGen g) => g -> Shape.Ray -> [Shape.Element] -> Double -> Double -> Double -> Int -> (Vec.Vec, g)
-sampleAt randGen _ _ _ _ _ 0 = (Vec.Vec 0 0 0, randGen)
-sampleAt randGen (Shape.Ray camO camD) scene x y sams step = ((Vec.addVec f (Vec.scaleVec nextf (1/sams))), nextGen)
-    where
-        (f, newGen) = sampleSubPix randGen (Shape.Ray camO camD) scene x y
-        (nextf, nextGen) = sampleAt newGen (Shape.Ray camO camD) scene x y sams (step-1)
+--sampleAt :: (RandomGen g) => g -> Shape.Ray -> [Shape.Element] -> Double -> Double -> Double -> Int -> (Vec.Vec, g)
+--sampleAt randGen _ _ _ _ _ 0 = (Vec.Vec 0 0 0, randGen)
+--sampleAt randGen (Shape.Ray camO camD) scene x y sams step = ((Vec.addVec f (Vec.scaleVec nextf (1/sams))), nextGen)
+--    where
+--        (f, newGen) = sampleSubPix randGen (Shape.Ray camO camD) scene x y
+--        (nextf, nextGen) = sampleAt newGen (Shape.Ray camO camD) scene x y sams (step-1)
 
-sampleSubPix :: (RandomGen g) => g -> Shape.Ray -> [Shape.Element] -> Double -> Double -> (Vec.Vec, g)
-sampleSubPix randGen cam scene x y = ((Vec.scaleVec (foldr Vec.addVec (Vec.Vec 0 0 0) vList) 0.25), newGen)
-    where 
+--sampleSubPix :: (RandomGen g) => g -> Shape.Ray -> [Shape.Element] -> Double -> Double -> (Vec.Vec, g)
+--sampleSubPix randGen cam scene x y = ((Vec.scaleVec (foldr Vec.addVec (Vec.Vec 0 0 0) vList) 0.25), newGen)
+--    where 
+--        rayList = generateRay cam x y
+--        (vList, newGen) = getValue rayList randGen
+--        getValue [] rG = ([], rG)
+--        getValue (r:rs) rG = ((v:r1), r2)
+--            where
+--                (v, nRG) = radiance scene r rG 0
+--                (r1, r2) = getValue rs nRG
+
+sampleAt :: (RandomGen g) => g -> Shape.Ray -> [Shape.Element] -> Double -> Double -> Int -> (Vec.Vec, g)
+sampleAt randGen _ _ _ _  0 = (Vec.Vec 0 0 0, randGen)
+sampleAt randGen cam scene x y sams = ((Vec.scaleVec (foldr Vec.addVec (Vec.Vec 0 0 0) vList) 0.25), newGen)
+    where
         rayList = generateRay cam x y
         (vList, newGen) = getValue rayList randGen
         getValue [] rG = ([], rG)
-        getValue (r:rs) rG = ((v:r1), r2)
+        getValue (r:rs) rG = (((clamp v):r1), r2)
             where
-                (v, nRG) = radiance scene r rG 0
+                (v, nRG) = sampleNTimes scene r rG sams
                 (r1, r2) = getValue rs nRG
+
+sampleNTimes :: (RandomGen g) => [Shape.Element] -> Shape.Ray -> g -> Int -> (Vec.Vec, g)
+sampleNTimes scene ray rndGen samples = sampleNTimes' scene ray rndGen scaleFactor samples
+    where
+        scaleFactor = 1/(fromIntegral samples)
+        sampleNTimes' s r rG sF 0 = (Vec.Vec 0 0 0, rG)
+        sampleNTimes' s r rG sF step = ((Vec.addVec (Vec.scaleVec v sF) nextR), nextGen) 
+            where
+                (v, newGen) = radiance scene r rG 0
+                (nextR, nextGen) = sampleNTimes' scene r newGen sF (step-1)
 
 clamp :: Vec.Vec -> Vec.Vec 
 clamp v = Vec.Vec x y z
