@@ -92,7 +92,9 @@ refrRay (Just element) (Just t) (Shape.Ray rO rD)
 
 
 intersection :: [Shape.Element] -> Shape.Ray -> (Maybe Double, Maybe Shape.Element) 
-intersection eleList r = intersection' eleList r Nothing Nothing
+intersection eleList r = (t, e)
+    where
+        (t, e) = intersection' eleList r Nothing Nothing
 
 intersection' :: [Shape.Element] -> Shape.Ray -> Maybe Double -> Maybe Shape.Element -> (Maybe Double, Maybe Shape.Element)
 intersection' [] r t_min ele_min = (t_min, ele_min)

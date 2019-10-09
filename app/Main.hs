@@ -19,24 +19,22 @@ main = mainWith myFunction
             args <- getArgs
             rGen <- newStdGen
             case args of 
-                [output] -> interactWith function sampleScene output
-                _ -> putStrLn "error: exactly one argument needed" 
-        myFunction = generatePPM
+                [input, output] -> interactWith function (read input) output
+                _ -> putStrLn "error: exactly two arguments needed" 
+        myFunction = generatePPM.renderFunc
 
 
-testImage = [[if i < 500 then Vec.Vec 1 0 0 else (if i < 750 then Vec.Vec 0 1 0 else Vec.Vec 0 0 1) | i <- [0..1023]] | j <- [0..767]]
-
-sampleRow::Int -> Int -> [Vec.Vec]
-sampleRow seed row = sampleRow' (mkStdGen seed) 1024
+sampleRow::Int -> Int -> Int -> [Vec.Vec]
+sampleRow seed row sams = sampleRow' (mkStdGen seed) 1024
     where
         sampleRow' rGen step
             | step /= 0 = res:(sampleRow' newGen (step-1))
             | otherwise = []
             where
-                (t_res, newGen) = sampleAt rGen cam scene (fromIntegral step) (fromIntegral row) 1
+                (t_res, newGen) = sampleAt rGen cam scene (fromIntegral step) (fromIntegral row) sams
                 res = clamp t_res
 
-sampleScene = [sampleRow i (showValue "row" i) | i <- [767, 766..0]]
+renderFunc sams = [sampleRow i (showValue "row" i) sams | i <- [767, 766..0]]
 
 cam = Shape.Ray (Vec.Vec 50 52 295.6) (Vec.normVec (Vec.Vec 0 (-0.042612) (-1)))
 scene = [ 
@@ -46,27 +44,9 @@ scene = [
     (Shape.Sphere 1e5 (Vec.Vec 50 40.8 ((-1e5)+170))    (Vec.Vec 0 0 0)     (Vec.Vec 0 0 0)             Shape.Diff),
     (Shape.Sphere 1e5 (Vec.Vec 50 1e5 81.6)             (Vec.Vec 0 0 0)     (Vec.Vec 0.75 0.75 0.75)    Shape.Diff),
     (Shape.Sphere 1e5 (Vec.Vec 50 ((-1e5)+81.6) 81.6)   (Vec.Vec 0 0 0)     (Vec.Vec 0.75 0.75 0.75)    Shape.Diff),
-    (Shape.Sphere 16.5 (Vec.Vec 27 16.5 47)             (Vec.Vec 0 0 0)     (Vec.Vec 0.999 0.999 0.999)    Shape.Spec),
+    (Shape.Sphere 16.5 (Vec.Vec 27 16.5 47)             (Vec.Vec 0 0 0)     (Vec.Vec 0.8 0.8 0.8)    Shape.Spec),
     (Shape.Sphere 16.5 (Vec.Vec 73 16.5 78)             (Vec.Vec 0 0 0)     (Vec.Vec 0.999 0.999 0.999)    Shape.Refr),
     (Shape.Sphere 600 (Vec.Vec 50 (681.6-0.27) 81.6)    (Vec.Vec 12 12 12)  (Vec.Vec 0 0 0)             Shape.Diff)]
-
---sampleAt :: (RandomGen g) => g -> Shape.Ray -> [Shape.Element] -> Double -> Double -> Double -> Int -> (Vec.Vec, g)
---sampleAt randGen _ _ _ _ _ 0 = (Vec.Vec 0 0 0, randGen)
---sampleAt randGen (Shape.Ray camO camD) scene x y sams step = ((Vec.addVec f (Vec.scaleVec nextf (1/sams))), nextGen)
---    where
---        (f, newGen) = sampleSubPix randGen (Shape.Ray camO camD) scene x y
---        (nextf, nextGen) = sampleAt newGen (Shape.Ray camO camD) scene x y sams (step-1)
-
---sampleSubPix :: (RandomGen g) => g -> Shape.Ray -> [Shape.Element] -> Double -> Double -> (Vec.Vec, g)
---sampleSubPix randGen cam scene x y = ((Vec.scaleVec (foldr Vec.addVec (Vec.Vec 0 0 0) vList) 0.25), newGen)
---    where 
---        rayList = generateRay cam x y
---        (vList, newGen) = getValue rayList randGen
---        getValue [] rG = ([], rG)
---        getValue (r:rs) rG = ((v:r1), r2)
---            where
---                (v, nRG) = radiance scene r rG 0
---                (r1, r2) = getValue rs nRG
 
 sampleAt :: (RandomGen g) => g -> Shape.Ray -> [Shape.Element] -> Double -> Double -> Int -> (Vec.Vec, g)
 sampleAt randGen _ _ _ _  0 = (Vec.Vec 0 0 0, randGen)
