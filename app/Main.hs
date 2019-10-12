@@ -5,6 +5,7 @@ import Lib
 import System.Environment (getArgs)
 import qualified Vec
 import qualified Shape
+--import Function_refactoring (radiance)
 import Function (radiance)
 import System.Random
 import Debug.Trace 
@@ -38,15 +39,15 @@ renderFunc sams = [sampleRow i (showValue "row" i) sams | i <- [767, 766..0]]
 
 cam = Shape.Ray (Vec.Vec 50 52 295.6) (Vec.normVec (Vec.Vec 0 (-0.042612) (-1)))
 scene = [ 
-    (Shape.Sphere 1e5 (Vec.Vec (1e5+1) 40.8 81.6)       (Vec.Vec 0 0 0)     (Vec.Vec 0.75 0.25 0.25)    Shape.Diff), 
-    (Shape.Sphere 1e5 (Vec.Vec ((-1e5)+99) 40.8 81.6)   (Vec.Vec 0 0 0)     (Vec.Vec 0.25 0.25 0.75)    Shape.Diff),
-    (Shape.Sphere 1e5 (Vec.Vec 50 40.8 1e5)             (Vec.Vec 0 0 0)     (Vec.Vec 0.75 0.75 0.75)    Shape.Diff),
-    (Shape.Sphere 1e5 (Vec.Vec 50 40.8 ((-1e5)+170))    (Vec.Vec 0 0 0)     (Vec.Vec 0 0 0)             Shape.Diff),
-    (Shape.Sphere 1e5 (Vec.Vec 50 1e5 81.6)             (Vec.Vec 0 0 0)     (Vec.Vec 0.75 0.75 0.75)    Shape.Diff),
-    (Shape.Sphere 1e5 (Vec.Vec 50 ((-1e5)+81.6) 81.6)   (Vec.Vec 0 0 0)     (Vec.Vec 0.75 0.75 0.75)    Shape.Diff),
-    (Shape.Sphere 16.5 (Vec.Vec 27 16.5 47)             (Vec.Vec 0 0 0)     (Vec.Vec 0.8 0.8 0.8)    Shape.Spec),
-    (Shape.Sphere 16.5 (Vec.Vec 73 16.5 78)             (Vec.Vec 0 0 0)     (Vec.Vec 0.999 0.999 0.999)    Shape.Refr),
-    (Shape.Sphere 600 (Vec.Vec 50 (681.6-0.27) 81.6)    (Vec.Vec 12 12 12)  (Vec.Vec 0 0 0)             Shape.Diff)]
+    (Shape.Sphere 1e5  (Vec.Vec (1e5+1) 40.8 81.6)       (Vec.Vec 0 0 0)     (Vec.Vec 0.75 0.25 0.25)       Shape.Diff), 
+    (Shape.Sphere 1e5  (Vec.Vec ((-1e5)+99) 40.8 81.6)   (Vec.Vec 0 0 0)     (Vec.Vec 0.25 0.25 0.75)       Shape.Diff),
+    (Shape.Sphere 1e5  (Vec.Vec 50 40.8 1e5)             (Vec.Vec 0 0 0)     (Vec.Vec 0.75 0.75 0.75)       Shape.Diff),
+    (Shape.Sphere 1e5  (Vec.Vec 50 40.8 ((-1e5)+170))    (Vec.Vec 0 0 0)     (Vec.Vec 0 0 0)                Shape.Diff),
+    (Shape.Sphere 1e5  (Vec.Vec 50 1e5 81.6)             (Vec.Vec 0 0 0)     (Vec.Vec 0.75 0.75 0.75)       Shape.Diff),
+    (Shape.Sphere 1e5  (Vec.Vec 50 ((-1e5)+81.6) 81.6)   (Vec.Vec 0 0 0)     (Vec.Vec 0.75 0.75 0.75)       Shape.Diff),
+    (Shape.Sphere 16.5 (Vec.Vec 27 16.5 47)              (Vec.Vec 0 0 0)     (Vec.Vec 0.8 0.8 0.8)          Shape.Spec),
+    (Shape.Sphere 16.5 (Vec.Vec 73 16.5 78)              (Vec.Vec 0 0 0)     (Vec.Vec 0.999 0.999 0.999)    Shape.Refr),
+    (Shape.Sphere 600  (Vec.Vec 50 (681.6-0.27) 81.6)    (Vec.Vec 12 12 12)  (Vec.Vec 0 0 0)                Shape.Diff)]
 
 sampleAt :: (RandomGen g) => g -> Shape.Ray -> [Shape.Element] -> Double -> Double -> Int -> (Vec.Vec, g)
 sampleAt randGen _ _ _ _  0 = (Vec.Vec 0 0 0, randGen)
@@ -67,7 +68,8 @@ sampleNTimes scene ray rndGen samples = sampleNTimes' scene ray rndGen scaleFact
         sampleNTimes' s r rG sF 0 = (Vec.Vec 0 0 0, rG)
         sampleNTimes' s r rG sF step = ((Vec.addVec (Vec.scaleVec v sF) nextR), nextGen) 
             where
-                (v, newGen) = radiance scene r rG 0
+                --(v, newGen) = radiance scene r rG 0
+                (v, newGen) = radiance (0, scene, r, rG)
                 (nextR, nextGen) = sampleNTimes' scene r newGen sF (step-1)
 
 clamp :: Vec.Vec -> Vec.Vec 

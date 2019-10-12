@@ -42,3 +42,6 @@ crossVec vec1 vec2 = Vec ((y1*z2) - (z1*y2)) ((z1*x2) - (x1*z2)) ((x1*y2) - (y1*
         x2 = x vec2
         y2 = y vec2
         z2 = z vec2
+
+maxDim :: Vec -> Double 
+maxDim v = if x v > y v && x v > z v then x v else if y v > z v then y v else z v

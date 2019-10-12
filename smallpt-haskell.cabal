@@ -41,6 +41,7 @@ executable smallpt-haskell-exe
   main-is: Main.hs
   other-modules:
       Function
+      Function_refactoring
       Shape
       Vec
       Paths_smallpt_haskell
