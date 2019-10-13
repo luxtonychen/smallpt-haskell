@@ -5,10 +5,11 @@ import Lib
 import System.Environment (getArgs)
 import qualified Vec
 import qualified Shape
---import Function_refactoring (radiance)
 import Function (radiance)
 import System.Random
 import Debug.Trace 
+import Control.Parallel.Strategies
+import Control.Parallel
 
 interactWith function params outputFile = do
     writeFile outputFile (function params)
@@ -22,8 +23,11 @@ main = mainWith myFunction
             case args of 
                 [input, output] -> interactWith function (read input) output
                 _ -> putStrLn "error: exactly two arguments needed" 
-        myFunction = generatePPM.renderFunc
+        myFunction = generatePPM.parRenderFunc
 
+renderFunc sams = [sampleRow i (showValue "row" i) sams | i <- [767, 766..0]]
+parRenderFunc sams = parMap rseq sampFunc [767, 766..0]
+    where sampFunc i = sampleRow i i sams
 
 sampleRow::Int -> Int -> Int -> [Vec.Vec]
 sampleRow seed row sams = sampleRow' (mkStdGen seed) 1024
@@ -35,13 +39,11 @@ sampleRow seed row sams = sampleRow' (mkStdGen seed) 1024
                 (t_res, newGen) = sampleAt rGen cam scene (fromIntegral step) (fromIntegral row) sams
                 res = clamp t_res
 
-renderFunc sams = [sampleRow i (showValue "row" i) sams | i <- [767, 766..0]]
-
 cam = Shape.Ray (Vec.Vec 50 52 295.6) (Vec.normVec (Vec.Vec 0 (-0.042612) (-1)))
 scene = [ 
     (Shape.Sphere 1e5  (Vec.Vec (1e5+1) 40.8 81.6)       (Vec.Vec 0 0 0)     (Vec.Vec 0.75 0.25 0.25)       Shape.Diff), 
     (Shape.Sphere 1e5  (Vec.Vec ((-1e5)+99) 40.8 81.6)   (Vec.Vec 0 0 0)     (Vec.Vec 0.25 0.25 0.75)       Shape.Diff),
-    (Shape.Sphere 1e5  (Vec.Vec 50 40.8 1e5)             (Vec.Vec 0 0 0)     (Vec.Vec 0.75 0.75 0.75)       Shape.Diff),
+    (Shape.Sphere 1e5  (Vec.Vec 50 40.8 1e5)             (Vec.Vec 0 0 0)     (Vec.Vec 0.25 0.75 0.25)       Shape.Diff),
     (Shape.Sphere 1e5  (Vec.Vec 50 40.8 ((-1e5)+170))    (Vec.Vec 0 0 0)     (Vec.Vec 0 0 0)                Shape.Diff),
     (Shape.Sphere 1e5  (Vec.Vec 50 1e5 81.6)             (Vec.Vec 0 0 0)     (Vec.Vec 0.75 0.75 0.75)       Shape.Diff),
     (Shape.Sphere 1e5  (Vec.Vec 50 ((-1e5)+81.6) 81.6)   (Vec.Vec 0 0 0)     (Vec.Vec 0.75 0.75 0.75)       Shape.Diff),
