@@ -46,7 +46,7 @@ executable smallpt-haskell-exe
       Paths_smallpt_haskell
   hs-source-dirs:
       app
-  ghc-options: -O2 -threaded -rtsopts -with-rtsopts=-N8
+  ghc-options: -O2 -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
     , smallpt-haskell
