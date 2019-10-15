@@ -1,6 +1,10 @@
 # smallpt-haskell
 This repository includes very high level computation model in a project which aims on constructing a general, mapping-to-hardware-friendly ray tracing module. The start point is [**smallpt**](https://www.kevinbeason.com/smallpt/) . Currently, after several iteration, code are totally refactored, and the core computation model has been abstracted by **pure function**, **partial function** and **high order function**.
 
+## Computation Model
+The computation model for the radiance stage (app/Function.hs) can be considered as following mult-processes system. Note that currently it is a recursive model, which is not *ready-to-map* to hardware. 
+![alt text](./sample_image/radiance.jpg)
+
 ## Usage
 This repository are constructed by [Stack](https://docs.haskellstack.org/en/stable/README/).
 
