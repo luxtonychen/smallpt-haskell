@@ -14,3 +14,4 @@ After the project is compiled, use following command to execute the program, whe
 
 ### Expect output
 After long-enough waiting you should obtain a *ppm* file like:  
+![alt text](./sample_image/2000.png)
